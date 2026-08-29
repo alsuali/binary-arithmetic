@@ -2,11 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <title>Unsigned Binary Arithmetic Practice</title>
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
     body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -26,20 +35,25 @@
 
     h1 {
         font-size: 1.5rem;
-        margin-top: 0;
+        margin: 0 0 16px;
     }
 
     .operation-choice {
-        margin: 20px 0;
+        margin: 12px 0 14px;
         font-size: 1.1rem;
     }
 
     .operation-choice label {
         margin: 0 10px;
+        white-space: nowrap;
+    }
+
+    .arithmetic-wrap {
+        margin: 10px auto 14px;
     }
 
     table {
-        margin: 25px auto;
+        margin: 0 auto;
         border-collapse: collapse;
     }
 
@@ -66,14 +80,16 @@
         box-sizing: border-box;
         text-align: center;
         font-family: "Courier New", monospace;
-        font-size: 1.3rem;
+        font-size: 16px; /* 16px helps prevent iOS input zoom */
+        font-weight: bold;
         border: 2px solid #777;
         border-radius: 5px;
+        padding: 0;
     }
 
     .answer-row td.bit-cell {
         border-top: 3px solid #222;
-        padding-top: 8px;
+        padding-top: 6px;
     }
 
     .answer-row .operator {
@@ -83,11 +99,12 @@
     button {
         font-size: 1rem;
         padding: 10px 18px;
-        margin: 5px;
+        margin: 4px;
         cursor: pointer;
         border-radius: 6px;
         border: 1px solid #555;
         background: #eee;
+        touch-action: manipulation;
     }
 
     button:hover {
@@ -95,9 +112,9 @@
     }
 
     #feedback {
-        min-height: 30px;
-        margin-top: 18px;
-        font-size: 1.1rem;
+        min-height: 26px;
+        margin-top: 10px;
+        font-size: 1.05rem;
         font-weight: bold;
     }
 
@@ -128,30 +145,121 @@
         padding-right: 10px;
     }
 
-    @media (max-width: 480px) {
+    /*
+        Compact phone layout.
+
+        The goal is to keep the carry/borrow row, operands,
+        and result row visible together while the software
+        keyboard is open.
+    */
+    @media (max-width: 600px), (max-height: 700px) {
         body {
-            padding: 10px;
+            padding:
+                max(6px, env(safe-area-inset-top))
+                max(6px, env(safe-area-inset-right))
+                max(6px, env(safe-area-inset-bottom))
+                max(6px, env(safe-area-inset-left));
         }
 
         .game {
-            padding: 15px 8px;
+            max-width: 100%;
+            padding: 8px 5px 10px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 1.15rem;
+            line-height: 1.15;
+            margin: 0 0 6px;
+        }
+
+        .operation-choice {
+            margin: 4px 0 6px;
+            font-size: 1rem;
+        }
+
+        .operation-choice label {
+            margin: 0 5px;
+        }
+
+        .arithmetic-wrap {
+            margin: 2px auto 6px;
         }
 
         td {
-            width: 42px;
-            height: 44px;
-            font-size: 1.5rem;
+            width: 40px;
+            height: 36px;
+            padding: 0 1px;
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+
+        .operator {
+            width: 24px;
+            padding-right: 4px;
         }
 
         .bit-input {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 30px;
+            font-size: 16px;
+            border-width: 1.5px;
+            border-radius: 4px;
         }
 
         .row-label {
-            width: 55px;
-            font-size: 0.75rem;
-            padding-right: 5px;
+            width: 52px;
+            padding-right: 4px;
+            font-size: 0.72rem;
+            line-height: 1;
+        }
+
+        .answer-row td.bit-cell {
+            padding-top: 3px;
+        }
+
+        button {
+            font-size: 0.95rem;
+            padding: 7px 14px;
+            margin: 2px;
+        }
+
+        #feedback {
+            min-height: 20px;
+            margin-top: 5px;
+            font-size: 0.95rem;
+        }
+    }
+
+    /*
+        Extra compact layout for short viewports such as
+        an iPhone while its on-screen keyboard is displayed.
+    */
+    @media (max-height: 520px) {
+        h1 {
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        .operation-choice {
+            margin: 1px 0 3px;
+            font-size: 0.9rem;
+        }
+
+        td {
+            height: 31px;
+        }
+
+        .bit-input {
+            height: 28px;
+        }
+
+        button {
+            padding: 5px 12px;
+        }
+
+        #feedback {
+            margin-top: 2px;
         }
     }
 </style>
@@ -175,99 +283,118 @@
         </label>
     </div>
 
-    <table>
-        <!-- Carry / Borrow row -->
-        <tr>
-            <td class="row-label" id="workLabel">Carry</td>
+    <div class="arithmetic-wrap" id="arithmeticWrap">
+        <table>
+            <!-- Carry / Borrow row -->
+            <tr>
+                <td class="row-label" id="workLabel">Carry</td>
 
-            <!-- Final carry/borrow -->
-            <td>
-                <input class="bit-input work-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <!-- Final carry/borrow -->
+                <td>
+                    <input class="bit-input work-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1"
+                           aria-label="Final carry or borrow">
+                </td>
 
-            <!-- Intermediate carry/borrow bits -->
-            <td>
-                <input class="bit-input work-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <!-- Intermediate carry/borrow bits -->
+                <td>
+                    <input class="bit-input work-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <td>
-                <input class="bit-input work-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <td>
+                    <input class="bit-input work-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <td>
-                <input class="bit-input work-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <td>
+                    <input class="bit-input work-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <!-- No carry/borrow input to the LSB -->
-            <td></td>
-        </tr>
+                <!-- No carry/borrow input to the LSB -->
+                <td></td>
+            </tr>
 
-        <!-- First operand -->
-        <tr>
-            <td></td>
-            <td></td>
-            <td id="a3"></td>
-            <td id="a2"></td>
-            <td id="a1"></td>
-            <td id="a0"></td>
-        </tr>
+            <!-- First operand -->
+            <tr>
+                <td></td>
+                <td></td>
+                <td id="a3"></td>
+                <td id="a2"></td>
+                <td id="a1"></td>
+                <td id="a0"></td>
+            </tr>
 
-        <!-- Second operand -->
-        <tr>
-            <td></td>
-            <td class="operator" id="operator">+</td>
-            <td id="b3"></td>
-            <td id="b2"></td>
-            <td id="b1"></td>
-            <td id="b0"></td>
-        </tr>
+            <!-- Second operand -->
+            <tr>
+                <td></td>
+                <td class="operator" id="operator">+</td>
+                <td id="b3"></td>
+                <td id="b2"></td>
+                <td id="b1"></td>
+                <td id="b0"></td>
+            </tr>
 
-        <!-- Result -->
-        <tr class="answer-row">
-            <td class="row-label">Result</td>
-            <td></td>
+            <!-- Result -->
+            <tr class="answer-row">
+                <td class="row-label">Result</td>
+                <td></td>
 
-            <td class="bit-cell">
-                <input class="bit-input result-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <td class="bit-cell">
+                    <input class="bit-input result-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <td class="bit-cell">
-                <input class="bit-input result-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <td class="bit-cell">
+                    <input class="bit-input result-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <td class="bit-cell">
-                <input class="bit-input result-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
+                <td class="bit-cell">
+                    <input class="bit-input result-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
 
-            <td class="bit-cell">
-                <input class="bit-input result-bit"
-                       type="text"
-                       inputmode="numeric"
-                       maxlength="1">
-            </td>
-        </tr>
-    </table>
+                <td class="bit-cell">
+                    <input class="bit-input result-bit"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[01]*"
+                           autocomplete="off"
+                           maxlength="1">
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <div>
         <button id="generateButton">Generate</button>
@@ -315,15 +442,14 @@ function displayOperands() {
 /*
     Calculate result bits and carry bits for addition.
 
-    Carries are calculated from right to left.
-
     correctWork is stored visually from left to right:
 
-        carry-out, carry into bit 3,
-        carry into bit 2, carry into bit 1
+        final carry-out,
+        carry from bit 2,
+        carry from bit 1,
+        carry from bit 0
 
-    There is no textbox for the carry into bit 0
-    because it is implicitly zero.
+    There is no textbox for the carry into bit 0.
 */
 function calculateAddition() {
 
@@ -349,18 +475,6 @@ function calculateAddition() {
     }
 
     correctResult = resultRightToLeft.reverse();
-
-    /*
-       carriesRightToLeft originally contains:
-
-       carry from bit 0
-       carry from bit 1
-       carry from bit 2
-       carry from bit 3
-
-       Reverse it so it matches the four boxes displayed
-       from left to right.
-    */
     correctWork = carriesRightToLeft.reverse();
 }
 
@@ -370,9 +484,6 @@ function calculateAddition() {
     binary subtraction with borrowing.
 
     No two's complement is used.
-
-    Borrowing is calculated exactly as it would be
-    when performing column subtraction by hand.
 */
 function calculateSubtraction() {
 
@@ -387,7 +498,6 @@ function calculateSubtraction() {
         const bBit = (operandB >> bit) & 1;
 
         let value = aBit - borrow - bBit;
-
         let borrowOut = 0;
 
         if (value < 0) {
@@ -426,6 +536,29 @@ function clearInputs() {
 
 
 /*
+    Focus without deliberately scrolling the page.
+
+    Modern Safari supports preventScroll. The fallback
+    restores the page position if an older browser ignores it.
+*/
+function focusWithoutScroll(element) {
+
+    const x = window.scrollX;
+    const y = window.scrollY;
+
+    try {
+        element.focus({ preventScroll: true });
+    } catch (error) {
+        element.focus();
+    }
+
+    requestAnimationFrame(() => {
+        window.scrollTo(x, y);
+    });
+}
+
+
+/*
     Generate a new problem.
 */
 function generateProblem() {
@@ -458,12 +591,12 @@ function generateProblem() {
     displayOperands();
 
     /*
-       Start with the least significant result bit.
+        Begin with the least significant result bit.
     */
     const resultInputs =
         document.querySelectorAll(".result-bit");
 
-    resultInputs[resultInputs.length - 1].focus();
+    focusWithoutScroll(resultInputs[resultInputs.length - 1]);
 }
 
 
@@ -530,18 +663,22 @@ function checkAnswer() {
 /*
     Allow only 0 or 1 in the input boxes.
 
-    Move through the calculation in the natural arithmetic order:
+    Input follows the natural arithmetic sequence:
 
-        result bit 0 -> carry/borrow from bit 0
-        result bit 1 -> carry/borrow from bit 1
-        result bit 2 -> carry/borrow from bit 2
-        result bit 3 -> final carry/borrow
+        result bit 0
+        carry/borrow from bit 0
+        result bit 1
+        carry/borrow from bit 1
+        result bit 2
+        carry/borrow from bit 2
+        result bit 3
+        final carry/borrow
 */
 document.querySelectorAll(".bit-input").forEach(input => {
 
     input.addEventListener("input", function () {
 
-        this.value = this.value.replace(/[^01]/g, "");
+        this.value = this.value.replace(/[^01]/g, "").slice(0, 1);
 
         if (this.value === "") {
             return;
@@ -553,22 +690,16 @@ document.querySelectorAll(".bit-input").forEach(input => {
         const resultInputs =
             Array.from(document.querySelectorAll(".result-bit"));
 
-        /*
-            Both NodeLists are ordered visually from left to right:
-
-            resultInputs = [bit 3, bit 2, bit 1, bit 0]
-            workInputs   = [final, from bit 2, from bit 1, from bit 0]
-
-            Interleave them from right to left so that each result
-            bit is immediately followed by its carry/borrow bit.
-        */
         const inputSequence = [
             resultInputs[3],
             workInputs[3],
+
             resultInputs[2],
             workInputs[2],
+
             resultInputs[1],
             workInputs[1],
+
             resultInputs[0],
             workInputs[0]
         ];
@@ -578,7 +709,12 @@ document.querySelectorAll(".bit-input").forEach(input => {
         if (currentIndex !== -1 &&
             currentIndex < inputSequence.length - 1) {
 
-            inputSequence[currentIndex + 1].focus();
+            /*
+                Moving focus used to make iOS Safari jump
+                between the result and carry/borrow rows.
+                preventScroll keeps the arithmetic area steady.
+            */
+            focusWithoutScroll(inputSequence[currentIndex + 1]);
         }
     });
 });
